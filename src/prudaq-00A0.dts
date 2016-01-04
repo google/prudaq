@@ -1,0 +1,109 @@
+/*
+Copyright 2015 Google Inc. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied.  See the License for the specific language governing
+permissions and limitations under the License.
+*/
+
+// Compile with:
+// dtc -O dtb -I dts -o /lib/firmware/jholt-adc-00A0.dtbo -b 0 -@ jholt-adc-00A0.dts
+
+// You'll have to reboot, after which you can do this as root to activate it:
+// echo jholt-adc > /sys/devices/bone_capemgr.?/slots
+
+/dts-v1/;
+/plugin/;
+
+/ {
+   // This determines which boards can use this DTS overlay
+   compatible = "ti,beaglebone", "ti,beaglebone-green", "ti,beaglebone-black";
+
+   // I think part-number is supposed to correspond with the filename,
+   // so we'd save this as "jholt-parallel-input-00A0.dts".
+   part-number = "jholt-parallel-input";
+
+   // This always seems to be 00A0, and all the .dtbo files in /lib/firmware
+   // seem to be named foo-00A0.dtbo, but then are loaded without that suffix by
+   // echo foo > /sys/devices/bone_capemgr.?/slots
+   version = "00A0";
+
+   // List the pins and resources we'll be using.  This table:
+   // http://elinux.org/Ti_AM33XX_PRUSSv2#Beaglebone_PRU_connections_and_modes
+   // shows which pins can be used with PRU0 and PRU1 for input and output via
+   // registers R31 and R30.
+   //
+   // These pins are reserved for use by HDMI.  Beaglebone Green doesn't come with
+   // HDMI, but if you want to use this with Beaglebone Black you'll have to disable
+   // HDMI in uEnv.txt
+   //
+   // It'd be nice to use P8.20 and P8.21, but those are used by emmc2, so we'd
+   // have to disable that and boot from microSD instead of onbard flash.
+   exclusive-use =
+         "P8.27", "P8.28", "P8.29", "P8.30",
+         "P8.39", "P8.40", "P8.41", "P8.42", "P8.43", "P8.44", "P8.45", "P8.46",
+         "P9.26",
+         // And these inputs for PRU0 output
+         "P9.25", "P9.27", "P9.28", "P9.29", "P9.30", "P9.31";
+
+   fragment@0 {
+      target = <&am33xx_pinmux>;
+      __overlay__ {
+         example_pins: pinmux_pru_pru_pins {
+
+            // This table also gives us DT offset and pinmux mode for our pins:
+            // http://elinux.org/Ti_AM33XX_PRUSSv2#Beaglebone_PRU_connections_and_modes
+            //
+            // Table 9-60 in the TRM: http://www.ti.com/lit/ug/spruh73l/spruh73l.pdf
+            // helps us calculate the rest of the configuration value.
+            //
+            // For inputs, we also set bit 5, yielding a value of 0x26 if the pinmux mode
+            // is 0x06.  We could also set bits 3 and 4 to enable a pullup or pulldown.
+            pinctrl-single,pins = <
+               // Input pins
+               0x0E0 0x26  // P8.27
+               0x0E8 0x26  // P8.28
+               0x0E4 0x26  // P8.29
+               0x0EC 0x26  // P8.30
+
+               0x0B8 0x26  // P8.39
+               0x0BC 0x26  // P8.40
+               0x0B0 0x26  // P8.41
+               0x0B4 0x26  // P8.42
+               0x0A8 0x26  // P8.43
+               0x0AC 0x26  // P8.44
+               0x0A0 0x26  // P8.45
+               0x0A4 0x26  // P8.46
+
+               0x180 0x26  // P9.26
+
+               // Output pins
+               0x1AC 0x05  // P9.25
+               0x1A4 0x05  // P9.27
+               0x19C 0x05  // P9.28
+               0x194 0x05  // P9.29
+               0x198 0x05  // P9.30
+               0x190 0x05  // P9.31
+            >;
+         };
+      };
+   };
+
+   // This enables the PRU and assigns the GPIO pins to it for use in EGP mode.
+   fragment@1 {
+      target = <&pruss>;
+      __overlay__ {
+         status = "okay";
+         pinctrl-names = "default";
+         pinctrl-0 = <&example_pins>;
+      };
+   };
+};
