@@ -4,7 +4,7 @@ This page describes the theory of operation for the board, and how it's controll
 
 There are 3 ways to provide a clock to the ADC: BeagleBone pin, onboard 20MHz oscillator, and external clock source.
 
-![Clock selection](doc/clock_selection.png?raw=true "Clock selection")
+![Clock selection](clock_selection.png?raw=true "Clock selection")
 
 1. Onboard 20MHz MEMS oscillator.  Install a jumper on J1 toward the "20MHz osc" label near the 46 pin header.  No jumper on J4.
 
@@ -47,11 +47,11 @@ The two inputs are routed to the RAW0 and RAW1 SMA connectors.  J6 and J5 allow 
 
 Additionally, each input is switched through a MAX4734 4:1 analog switch, providing a total of 8 input channels at J2.  Inputs 0..3 go to the first channel (I) and inputs 4..7 go to the second channel (Q).  The analog switches are controlled independently by pins P9 27-30 (PRU0 r30 bits 5,3,1,2).  For example, if those pins were used to select inputs 1 and 7 by asserting P9_29 (low order bit for channel I switch), P9_28 and P9_27 (both bits for channel Q switch), then on the rising edge of the clock inputs 1 and 7 would be simultaneously sampled. 
 
-![Analog Inputs](doc/analog_inputs.png?raw=true "Analog Inputs")
+![Analog Inputs](analog_inputs.png?raw=true "Analog Inputs")
 
 The SMA and MAX4734 inputs are joined at the ADC input through a pair of 10 ohm resistors.  100pF capacitors to ground (C32 and C4) form a low pass filter with a corner at 160MHz, allowing undersampling of fast edges.  For lower noise sampling of slower signals, you may wish to replace R14, R2, R15, R3, C4, or C32 with larger values to lower the cutoff frequency of the input low pass filter.
 
-![Input termination and filtering](doc/input_termination_filtering.png?raw=true "Input termination and filtering")
+![Input termination and filtering](input_termination_filtering.png?raw=true "Input termination and filtering")
 
 Note that if J6 or J5 are installed to terminate the SMA connector inputs, they'll present a total of 70 ohms to ground to the analog switch inputs (50 + 10 + 10).
 
