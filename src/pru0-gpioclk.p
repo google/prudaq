@@ -14,73 +14,95 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
 implied.  See the License for the specific language governing
 permissions and limitations under the License.
 */
+
+/*
+This generates an ADC clock using GPIO pin P9_31.  It also selects
+the analog switch inputs specified by the host CPU, determining which
+of the inputs 0..3 will be sampled by ADC channel 0, and which of the
+inputs 4..7 will be sampled by ADC channel 1.
+*/
+
 .origin 0
 .entrypoint TOP
 
 #include "shared_header.h"
 
-#define COUNT_H    r20
-#define COUNT_L    r21
+// How many cycles in the "on" pulse
+#define HIGH_COUNT   r20
+// Counts down from HIGH_COUNT
+#define HIGH_COUNTER r21
+// Entry point into the loop depending whether HIGH_COUNT is odd or even
+#define HIGH_START   r22
+
+#define LOW_COUNT    r23
+#define LOW_COUNTER  r24
+#define LOW_START    r25
+
 #define SHARED_RAM r29
+
+#define NOP add r0, r0, 0
+
 TOP:
   // Enable OCP master ports in SYSCFG register
   lbco r0, C4, 4, 4
   clr  r0, r0, 4
   sbco r0, C4, 4, 4
 
-  // The only thing thing we are doing in this program is enabling the ADC.
-
-  // PRU-DAQ 2.0 PCB has pins 6-10 mirrored on the 4734 muxes.  This address
-  // line thus goes to the enable pin, and two of the inputs are swapped.
-  mov r30, 0x24
-
   mov SHARED_RAM, SHARED_RAM_ADDRESS
-  lbbo COUNT_H, SHARED_RAM, OFFSET(Params.poscnt), SIZE(Params.poscnt)
-  lbbo COUNT_L, SHARED_RAM, OFFSET(Params.negcnt), SIZE(Params.negcnt)
+  lbbo HIGH_COUNT, SHARED_RAM, OFFSET(Params.high_cycles), SIZE(Params.high_cycles)
+  lbbo LOW_COUNT, SHARED_RAM, OFFSET(Params.low_cycles), SIZE(Params.low_cycles)
+  lbbo r30, SHARED_RAM, OFFSET(Params.input_select), SIZE(Params.input_select)
 
-  mov r1, 0
-  mov r2, COUNT_H
-  mov r3, COUNT_L
+  mov HIGH_COUNTER, HIGH_COUNT
+  mov LOW_COUNTER, LOW_COUNT
 
-  mov r4, CYCLE_ODD_L
-  QBBS RET_H, r3, 0
-  mov r4, CYCLE_EVEN_L
+  // The loop decrements by 2, so we need to start a cycle early
+  // if the count is odd.  Store the appropriate starting address
+  // in LOW_START
+  mov LOW_START, CYCLE_ODD_L
+  QBBS CYCLE_L_IS_ODD, LOW_COUNTER, 0
+  mov LOW_START, CYCLE_EVEN_L
+CYCLE_L_IS_ODD:
 
-RET_H:
-  mov r5, CYCLE_ODD_H
-  QBBS CYCLE_ODD_H, r2, 0
-  mov r5, CYCLE_EVEN_H
+  // Repeat for HIGH_START
+  mov HIGH_START, CYCLE_ODD_H
+  QBBS CYCLE_H_IS_ODD, HIGH_COUNTER, 0
+  mov HIGH_START, CYCLE_EVEN_H
   QBA CYCLE_EVEN_H
+CYCLE_H_IS_ODD:
+
+  // Main loop starts here (or at CYCLE_EVEN_H if HIGH_COUNT is even)
 
 CYCLE_ODD_H:
-  sub r2, r2, 1
+  sub HIGH_COUNTER, HIGH_COUNTER, 1
 CYCLE_EVEN_H:
-  qbbs DONE, r1, 0
+  NOP
 WAIT_H:
-  sub r2, r2, 2
-  qblt WAIT_H, r2, 4
+  sub HIGH_COUNTER, HIGH_COUNTER, 2
+  qblt WAIT_H, HIGH_COUNTER, 4
 
-  mov r3, COUNT_L
+  // Reset the count for the low half of the cycle
+  mov LOW_COUNTER, LOW_COUNT
+
+  // GPIO clock pin P9_31 goes low
   clr r30, 0
 
-  JMP r4
+  // Jump to CYCLE_ODD_L or CYCLE_EVEN_L
+  JMP LOW_START
 
 CYCLE_ODD_L:
-  sub r3, r3, 1
+  sub LOW_COUNTER, LOW_COUNTER, 1
 CYCLE_EVEN_L:
-  qbbs DONE, r1, 0
+  NOP
 WAIT_L:
-  sub r3, r3, 2
-  qblt WAIT_L, r3, 4
+  sub LOW_COUNTER, LOW_COUNTER, 2
+  qblt WAIT_L, LOW_COUNTER, 4
 
-  mov r2, COUNT_H
+  // Reset the count for the high half of the cycle
+  mov HIGH_COUNTER, HIGH_COUNT
+
+  // GPIO clock pin P9_31 goes high
   set r30, 0
 
-  JMP r5
-
-DONE:
-//disable ADC and deselect MUX
-  mov r30, 0
-
-// Don't forget to halt!
-halt
+  // Start the cycle over, skipping CYCLE_ODD_H if the count is even
+  JMP HIGH_START

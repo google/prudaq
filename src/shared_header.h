@@ -26,12 +26,23 @@ permissions and limitations under the License.
 #ifndef BUILD_WITH_PASM
 
 typedef struct {
+  // Physical address of the start of the shared main memory buffer.
+  // (The PRUs don't go through the virtual memory system, so they
+  // see different memory addresses than the linux side does)
   uint32_t physical_addr;
+  // Length in bytes of the shared main memory buffer
   uint32_t ddr_len;
   uint32_t shared_ptr;
   uint32_t bytes_written;
-  uint32_t poscnt;
-  uint32_t negcnt;
+  // Used by PRU0 to generate a clock signal.  Measured in
+  // PRU clock cycles (200MHz / 5ns).  Each must be >= 6.
+  uint32_t high_cycles;
+  uint32_t low_cycles;
+  // Which input should be selected on each of the two 4:1 analog switches
+  // that sit in front of the two ADC input channels.  This is written
+  // as-is to r30 on PRU0, setting all of its GPIOs as specified (limited
+  // by which pins are enabled in the device tree overlay).
+  uint32_t input_select;
 } pruparams_t;
 
 #else
@@ -43,8 +54,9 @@ typedef struct {
   .u32 ddr_len
   .u32 shared_ptr
   .u32 bytes_written
-  .u32 poscnt
-  .u32 negcnt
+  .u32 high_cycles
+  .u32 low_cycles
+  .u32 input_select
 .ends
 
 #endif

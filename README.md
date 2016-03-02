@@ -1,9 +1,9 @@
 # PRUDAQ
 *This is not an official Google product.*
 
-PRUDAQ is an open source 40MSPS (megasamples per second) Data Acquisition board for the Beaglebone Green. This repo includes the Eagle CAD electrical circuit board design and parts, as well as the code required to interface with the board and run a sample analog capture script.
+PRUDAQ is an open source 40MSPS (20MSPS \* 2 channels) Data Acquisition board for the BeagleBone Black and BeagleBone Green. This repo includes the Eagle CAD electrical circuit board design and parts, as well as the code required to interface with the board and run a sample analog capture script.
 
-The board is built around the AD9201 analog to digital converter, which samples two inputs simultaneously at up to 20MSPS per channel. The code consists of embedded software for the programmable real-time units (PRU) onboard the Beaglebone as well as software for pulling the data to the CPU for processing and storing.
+The board is built around the AD9201 analog to digital converter, which samples two inputs simultaneously at up to 20MSPS per channel. The code consists of embedded software for the programmable real-time units (PRU) onboard the Beaglebone as well as software for pulling the data to the CPU for processing and storage.
 
 # Build
 
@@ -82,4 +82,4 @@ Remove the pipe to head for a live stream of all 8 inputs, try bridging a resist
        Physical (PRU-side) address:9f5c0000
       Virtual (linux-side) address: 0xb6da4000
   
-  This is probably because the clock signal isn’t being received. Check to make sure the clock signal jumper is jumping to the GPIO clock (or onboard clock)
+  This is probably because the clock signal isn't being received. Check to make sure J1 is set to use the GPIO clock or onboard clock

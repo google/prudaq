@@ -14,12 +14,28 @@
 # implied.  See the License for the specific language governing
 # permissions and limitations under the License.
 
-echo prudaq > /sys/devices/bone_capemgr.9/slots
+if [[ $EUID -ne 0 ]]; then
+  echo "Must be root. Try again with sudo."
+  exit 1
+fi
 
-#echo bone_pwm_P9_31 > /sys/devices/bone_capemgr.9/slots
-#echo am33xx_pwm > /sys/devices/bone_capemgr.9/slots
-#sleep 1
-# 1000 period ~ 1Mhz
-#echo 10 > /sys/devices/ocp.3/pwm_test_P9_14.12/period
-# 500 cycles off time
-#echo 5 > /sys/devices/ocp.3/pwm_test_P9_14.12/duty
+DEVICE_OVERLAY=/lib/firmware/prudaq-00A0.dtbo
+if [[ ! -f $DEVICE_OVERLAY ]] ; then
+  echo -n "$DEVICE_OVERLAY not found, so we can't enable it."
+  echo -n " (Did you run 'make install' to generate the .dtbo"
+  echo -n " file from the .dts and copy it to /lib/firmware?)"
+  echo
+  echo
+  exit 2
+fi
+
+if echo prudaq > /sys/devices/bone_capemgr.9/slots ; then
+  echo 'Device overlay successfully loaded.'
+else
+  echo
+  echo -n "Couldn't enable the prudaq-00A0.dtbo device overlay."
+  echo -n " (If the error was 'File exists', then the overlay was already"
+  echo -n " enabled.)"
+  echo
+  exit 3
+fi

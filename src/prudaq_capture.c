@@ -15,9 +15,10 @@ permissions and limitations under the License.
 */
 
 /*
- * PRUDAQ capture program
- *
- */
+PRUDAQ capture program
+Loads .bin files into both PRUs, then reads from the shared
+buffer in main memory.
+*/
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -49,13 +50,14 @@ void sig_handler (int sig) {
 
 
 void usage (char* arg0) {
-  printf("%s\n", basename(arg0));
+  fprintf(stderr, "\nUsage: %s [flags] pru0_code.bin pru1_code.bin\n",
+          basename(arg0));
 
-  printf("\n"
-         "  -g freq\t gpio based clock frequency (default: 1MHz)\n"
-         //"  -m [0-3]\t mux 1 select (not implemented)\n"
-         //"  -n [0-3]\t mux 2 select (not implemented)\n"
-	 "  -o output\t output filename (default: stdout)\n"
+  fprintf(stderr, "\n"
+          "  -f freq\t gpio based clock frequency (default: 1000)\n"
+          "  -i [0-3]\t channel 0 input select\n"
+          "  -q [4-7]\t channel 1 input select\n"
+          "  -o output\t output filename (default: stdout)\n\n"
          );
   exit(EXIT_FAILURE);
 }
@@ -63,22 +65,35 @@ void usage (char* arg0) {
 
 int main (int argc, char **argv) {
   int ch = -1;
-  double gpiofreq = 1e6;
-  int mux0 = -1;
-  int mux1 = -1;
+  double gpiofreq = 1000;
+  int channel0_input = 0;
+  int channel1_input = 4;
   char* fname = "-";
   FILE* fout = stdout;
 
-  while (-1 != (ch = getopt(argc, argv, "g:m:n:o:"))) {
+  if (geteuid() != 0) {
+    fprintf(stderr, "Must be root.  Try again with sudo.\n");
+    return EXIT_FAILURE;
+  }
+
+  while (-1 != (ch = getopt(argc, argv, "f:i:q:o:"))) {
     switch (ch) {
-    case 'g':
+    case 'f':
       gpiofreq = strtod(optarg, NULL);
       break;
-    case 'm':
-      mux0 = strtol(optarg, NULL, 0);
+    case 'i':
+      channel0_input = strtol(optarg, NULL, 0);
+      if (channel0_input < 0 || channel0_input > 3) {
+        fprintf(stderr, "\n-i value must be between 0 and 3\n");
+        usage(argv[0]);
+      }
       break;
-    case 'n':
-      mux1 = strtol(optarg, NULL, 0);
+    case 'q':
+      channel1_input = strtol(optarg, NULL, 0);
+      if (channel1_input < 4 || channel1_input > 7) {
+        fprintf(stderr, "\n-q value must be between 4 and 7\n");
+        usage(argv[0]);
+      }
       break;
     case 'o':
       fname = optarg;
@@ -90,13 +105,12 @@ int main (int argc, char **argv) {
   }
 
   if (argc - optind != 2) {
-    fprintf(stderr, "Usage: %s pru0_code.bin pru1_code.bin\n", argv[0]);
+    usage(argv[0]);
     return EXIT_FAILURE;
   }
 
   argc -= optind;
   argv += optind;
-
 
   if (0 != strcmp(fname, "-")) {
     fout = fopen(fname, "w");
@@ -113,7 +127,8 @@ int main (int argc, char **argv) {
   // If this segfaults, make sure you're executing as root.
   prussdrv_init();
   if (0 != prussdrv_open(PRU_EVTOUT_0)) {
-    fprintf(stderr, "prussdrv_open() failed\n");
+    fprintf(stderr,
+            "prussdrv_open() failed. (Did you forget to run setup.sh?)\n");
     return EXIT_FAILURE;
   }
 
@@ -141,13 +156,37 @@ int main (int argc, char **argv) {
   pparams->physical_addr = physical_address;
   pparams->ddr_len       = shared_ddr_len;
 
-  // adding 0.5 and truncating is equivalent to rounding
+  // Calculate the GPIO clock high and low cycle counts.
+  // Adding 0.5 and truncating is equivalent to rounding
   int cycles = (PRU_CLK/gpiofreq + 0.5);
-  fprintf(stderr, "Actual GPIO clock speed is %g\n", PRU_CLK/((float)cycles));
+  fprintf(stderr, "Actual GPIO clock speed is %.2fHz\n", PRU_CLK/((float)cycles));
 
-  pparams->poscnt        = cycles/2;
-  pparams->negcnt        = cycles - pparams->poscnt;
+  if (cycles < 12) {
+    fprintf(stderr, "Requested frequency too high (max: 16666666)\n");
+    return EXIT_FAILURE;
+  }
+  pparams->high_cycles = cycles/2;
+  pparams->low_cycles  = cycles - pparams->high_cycles;
 
+  // Decide the value that'll get written to PRU0's register r30
+  // See the docs for how bits in r30 correspond to the INPUT0A/
+  // INPUT0B/INPUT1A/INPUT1B control lines on the analog switches.
+  uint32_t pru0r30 = 0;
+  switch (channel0_input) {
+    case 0: break;
+    case 1: pru0r30 |= (1 << 1); break;
+    case 2: pru0r30 |= (1 << 2); break;
+    case 3: pru0r30 |= (1 << 1) | (1 << 2); break;
+  }
+  switch (channel1_input) {
+    case 4: break;
+    case 5: pru0r30 |= (1 << 3); break;
+    case 6: pru0r30 |= (1 << 5); break;
+    case 7: pru0r30 |= (1 << 3) | (1 << 5); break;
+  }
+  pparams->input_select = pru0r30;
+
+  // Load the .bin files into PRU0 and PRU1
   prussdrv_exec_program(0, argv[0]);
   prussdrv_exec_program(1, argv[1]);
 
