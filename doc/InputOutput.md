@@ -34,8 +34,9 @@ INPUT0A, INPUT0B, INPUT1A, INPUT1B: Pins P9_27-30 (PRU0 r30 bits 5,3,1,2) contro
 
 INPUT0A and INPUT0B control the first mux, and INPUT1A and INPUT1B control the second one.  INPUT0A and INPUT0B are also routed over to PRU1 so that it's easy to record which input is enabled along with the 10 data bits.  (This is somewhat complicated if we want to round-robin between inputs on every clock edge, since the ADC has a 3-cycle pipeline latency -- the data lines show you what was captured 3 cycles ago, while the select lines show you what's being captured now.).
 
-If you use the board with the [BeagleLogic](https://github.com/abhishek-kakkar/BeagleLogic/wiki) software instead of the slower sample code we provide, PRU0 isn't available to control these pins or generate a GPIO clock. So in that case, instead we use the built-in PWM and GPIO features of the BeagleBone.  The table below shows that pin P9_29, which drives INPUT0A (the low order bit of the switch for inputs 0..3), can be controlled either through PRU0's r30 bit 1, or configured as gpio3[15] (aka gpio111) and controlled via the files in /sys/class/gpio/gpio111.
+If you use the board with the [BeagleLogic](https://github.com/abhishek-kakkar/BeagleLogic/wiki) software instead of the slower sample code we provide, PRU0 isn't available to control these pins or generate a GPIO clock. So in that case, instead we use the built-in PWM and GPIO features of the BeagleBone.  The table below shows that pin P9_29, which drives INPUT0A (the low order bit of the switch for inputs 0..3), can be controlled either through PRU0's r30 bit 1, or configured as gpio3\[15\] (aka gpio111) and controlled via the files in /sys/class/gpio/gpio111.
 
+```
 P9_29 = INPUT0A = PRU0 r30 bit 1 = gpio3[15] = /sys/class/gpio/gpio111/
 P9_30 = INPUT0B = PRU0 r30 bit 2 = gpio3[16] = /sys/class/gpio/gpio112/
 P9_28 = INPUT1A = PRU0 r30 bit 3 = gpio3[17] = /sys/class/gpio/gpio113/
@@ -50,5 +51,5 @@ Input 4: INPUT1B=0  INPUT1A=0
 Input 5: INPUT1B=0  INPUT1A=1
 Input 6: INPUT1B=1  INPUT1A=0
 Input 7: INPUT1B=1  INPUT1A=1
-
+```
 Pins P8_28 and P9_26 (PRU1 r31 bits 10 and 16) let PRU1 easily record INPUT0A and INPUT0B, as described just above.
