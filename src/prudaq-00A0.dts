@@ -14,11 +14,21 @@ implied.  See the License for the specific language governing
 permissions and limitations under the License.
 */
 
-// Compile with:
-// dtc -O dtb -I dts -o /lib/firmware/jholt-adc-00A0.dtbo -b 0 -@ jholt-adc-00A0.dts
+// See the Makefile for how this is compiled into a .dtbo file.
+// `make install` puts the .dtbo into /lib/firmware.
+// setup.sh activates it with:
+// echo prudaq > /sys/devices/bone_capemgr.?/slots
+//
+// Then you can check to see that it has loaded correctly (last line):
+// $ cat /sys/devices/bone_capemgr.?/slots
+//  0: 54:PF--- 
+//  1: 55:PF--- 
+//  2: 56:PF--- 
+//  3: 57:PF--- 
+//  4: ff:P-O-L Bone-LT-eMMC-2G,00A0,Texas Instrument,BB-BONE-EMMC-2G
+//  5: ff:P-O-L Override Board Name,00A0,Override Manuf,BB-UART2
+//  6: ff:P-O-L Override Board Name,00A0,Override Manuf,prudaq
 
-// You'll have to reboot, after which you can do this as root to activate it:
-// echo jholt-adc > /sys/devices/bone_capemgr.?/slots
 
 /dts-v1/;
 /plugin/;
@@ -28,8 +38,8 @@ permissions and limitations under the License.
    compatible = "ti,beaglebone", "ti,beaglebone-green", "ti,beaglebone-black";
 
    // I think part-number is supposed to correspond with the filename,
-   // so we'd save this as "jholt-parallel-input-00A0.dts".
-   part-number = "jholt-parallel-input";
+   // so we'd save this as "prudaq-00A0.dts".
+   part-number = "prudaq";
 
    // This always seems to be 00A0, and all the .dtbo files in /lib/firmware
    // seem to be named foo-00A0.dtbo, but then are loaded without that suffix by
@@ -48,10 +58,11 @@ permissions and limitations under the License.
    // It'd be nice to use P8.20 and P8.21, but those are used by emmc2, so we'd
    // have to disable that and boot from microSD instead of onbard flash.
    exclusive-use =
+         // These pins will be configured as inputs to PRU1
          "P8.27", "P8.28", "P8.29", "P8.30",
          "P8.39", "P8.40", "P8.41", "P8.42", "P8.43", "P8.44", "P8.45", "P8.46",
          "P9.26",
-         // And these inputs for PRU0 output
+         // And these will be configured as outputs from PRU0
          "P9.25", "P9.27", "P9.28", "P9.29", "P9.30", "P9.31";
 
    fragment@0 {
