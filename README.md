@@ -28,7 +28,7 @@ Then ssh into the Beaglebone to build and install the code:
     make
     sudo make install 
     
-    \# Init script that needs to be run once every time beaglebone is started up
+    # Init script that needs to be run once every time beaglebone is started up
     sudo ./setup.sh
 
 ### 3 - Set Clock input
