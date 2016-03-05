@@ -28,20 +28,30 @@ permissions and limitations under the License.
 typedef struct {
   // Physical address of the start of the shared main memory buffer.
   // (The PRUs don't go through the virtual memory system, so they
-  // see different memory addresses than the linux side does)
+  // see different memory addresses than the linux side does).
+  // Written by the CPU, read by the PRU
   uint32_t physical_addr;
   // Length in bytes of the shared main memory buffer
+  // Written by the CPU, read by the PRU
   uint32_t ddr_len;
+
+  // Physical address of where the PRU is going to write next.
+  // Written by the PRU, read by the CPU
   uint32_t shared_ptr;
+  // This 32-bit counter can roll over in about a minute at high sample rates.
+  // Written by the PRU, read by the CPU
   uint32_t bytes_written;
-  // Used by PRU0 to generate a clock signal.  Measured in
+
+  // Written by the CPU, read by PRU0 to generate a clock signal.  Measured in
   // PRU clock cycles (200MHz / 5ns).  Each must be >= 6.
   uint32_t high_cycles;
   uint32_t low_cycles;
+
   // Which input should be selected on each of the two 4:1 analog switches
   // that sit in front of the two ADC input channels.  This is written
   // as-is to r30 on PRU0, setting all of its GPIOs as specified (limited
   // by which pins are enabled in the device tree overlay).
+  // Written by the CPU, read by the PRU
   uint32_t input_select;
 } pruparams_t;
 

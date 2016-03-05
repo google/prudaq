@@ -10,7 +10,7 @@ DTC := $(Q)dtc
 
 .PHONY: all clean install
 
-TARGETS := prudaq_capture channel-0.bin pru0-enable-sw1.bin pru0-gpioclk.bin prudaq-00A0.dtbo
+TARGETS := prudaq_capture pru0.bin pru1.bin prudaq-00A0.dtbo
 
 all: $(TARGETS)
 

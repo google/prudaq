@@ -34,6 +34,7 @@ buffer in main memory.
 #include <time.h>
 
 
+// Used by sig_handler to tell us when to shutdown
 static int bCont = 1;
 
 // header for sharing info between PRUs and application processor
@@ -141,7 +142,7 @@ int main (int argc, char **argv) {
   prussdrv_map_prumem(PRUSS0_SHARED_DATARAM, (void**)&pparams);
 
   // Pointer into the DDR RAM mapped by the uio_pruss kernel module.
-  volatile uint16_t *shared_ddr = NULL;
+  volatile uint32_t *shared_ddr = NULL;
   prussdrv_map_extmem((void**)&shared_ddr);
   unsigned int shared_ddr_len = prussdrv_extmem_size();
   unsigned int physical_address = prussdrv_get_phys_addr((void*)shared_ddr);
@@ -190,13 +191,13 @@ int main (int argc, char **argv) {
   prussdrv_exec_program(0, argv[0]);
   prussdrv_exec_program(1, argv[1]);
 
-  uint32_t max_index = shared_ddr_len / sizeof(uint16_t);
+  uint32_t max_index = shared_ddr_len / sizeof(shared_ddr[0]);
   uint32_t read_index = 0;
   time_t now = time(NULL);
   time_t start_time = now;
 
   while (bCont) {
-    uint16_t *write_pointer_virtual = prussdrv_get_virt_addr(pparams->shared_ptr);
+    uint32_t *write_pointer_virtual = prussdrv_get_virt_addr(pparams->shared_ptr);
     uint32_t write_index = write_pointer_virtual - shared_ddr;
 
     // if nothing available sleep for 1ms and look again
@@ -205,15 +206,16 @@ int main (int argc, char **argv) {
       continue;
     }
 
-    uint16_t sample = shared_ddr[read_index];
+    uint32_t sample = shared_ddr[read_index];
     read_index = (read_index + 1) % max_index;
 
     unsigned int bytes_written = pparams->bytes_written;
 
-    // clear the clock and mux bits
-    sample &= 0x3ff;
+    // clear the clock and mux bits for both samples
+    sample &= 0x03ff03ff;
     fwrite(&sample, sizeof(sample), 1, fout);
     //fflush(fout);
+    //fprintf(stderr, "%d %d\n", (sample >> 16) & 0xffff, sample & 0xffff);
 
     if (now != time(NULL)) {
       now = time(NULL);
