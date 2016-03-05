@@ -1,9 +1,9 @@
 # PRUDAQ
 *This is not an official Google product.*
 
-PRUDAQ is an open source 40MSPS (20MSPS \* 2 channels) Data Acquisition board for the BeagleBone Black and BeagleBone Green. This repo includes the Eagle CAD electrical circuit board design and parts, as well as the code required to interface with the board and run a sample analog capture script.
+PRUDAQ is an open source 40MSPS (megasamples per second) Data Acquisition board for the BeagleBone Black and BeagleBone Green. This repo includes the Eagle CAD electrical schematic and layout, as well as the code required to interface with the board and capture samples.
 
-The board is built around the AD9201 analog to digital converter, which samples two inputs simultaneously at up to 20MSPS per channel. The code consists of embedded software for the programmable real-time units (PRU) onboard the Beaglebone as well as software for pulling the data to the CPU for processing and storage.
+The board is built around the Analog Devices AD9201 analog to digital converter, which samples two inputs simultaneously at up to 20MSPS per channel. The code consists of embedded software for the programmable real-time units (PRU) onboard the Beaglebone as well as software for pulling the data into the CPU for processing and storage.
 
 # Build
 
@@ -28,7 +28,7 @@ Then ssh into the Beaglebone to build and install the code:
     make
     sudo make install 
     
-    // Init script that needs to be run once every time beaglebone is started up
+    # Init script that needs to be run once every time beaglebone is started up
     sudo ./setup.sh
 
 ### 3 - Set Clock input
@@ -42,13 +42,22 @@ Use a 2-pin jumper and jump the middle pin to the pin closest to the label **GPI
 
 # Run
 
-An example script is included that loads binaries onto the two PRUs and logs analog data to stdout.
+An example program is included that loads code into the two PRUs and dumps analog binary data to stdout.
 
-    prudaq_capture usage: pru_capture pru0_code.bin pru1_code.bin
+```
+$ sudo ./prudaq_capture 
 
-This program loads the PRU binaries `*.bin` passed as arguments into the two PRUs. It then gets the pointer to the shared memory allocated by uio_pruss kernel module, keeps the virtual address for itself and sticks the physical address in the PRU shared memory for PRU1 to find. Then the main loop is reading the ring buffer. This goes on until the user Ctrl-C’s to halt the program.
+Usage: prudaq_capture [flags] pru0_code.bin pru1_code.bin
 
-Running `prudaq_capture` with the example binaries (with a pipe to hexdump and head for testing):
+  -f freq	 gpio based clock frequency (default: 1000)
+  -i [0-3]	 channel 0 input select
+  -q [4-7]	 channel 1 input select
+  -o output	 output filename (default: stdout)
+```
+
+This program loads the specified PRU binaries into the two PRUs. It then gets the pointer to the shared memory allocated by uio\_pruss kernel module, keeps the virtual address for itself and sticks the physical address in the PRU shared memory for PRU1 to find. Then the main loop is reading the ring buffer. This goes on until the user halts the program with ctrl-C.
+
+Running `prudaq\_capture` with the example binaries (with a pipe to hexdump and head for testing):
 
     ./prudaq_capture pru0-gpioclk.bin channel-0.bin | hexdump -d | head
     
@@ -69,12 +78,9 @@ Running `prudaq_capture` with the example binaries (with a pipe to hexdump and h
     0000090   00255   00255   00000   00001   00002   00003   00004   00255
 
 
-Remove the pipe to head for a live stream of all 8 inputs, try bridging a resistor between each yellow and black input pair to see the values change, or better yet connecting to a signal generator source of some sort.
+Remove the pipe to head for a live stream. Try bridging a resistor between each yellow and black input pair to see the values change, or better yet connect a signal generator to one of the SMA connectors.
 
 ## Troubleshooting 
-
-* If you got `prussdrv_open() failed` then you need to run `sudo ./setup.sh` again, we need to do this just once, every time the Beaglebone is restarted.
-
 
 * If you only see the initialization output but no data after:
 
@@ -82,4 +88,4 @@ Remove the pipe to head for a live stream of all 8 inputs, try bridging a resist
        Physical (PRU-side) address:9f5c0000
       Virtual (linux-side) address: 0xb6da4000
   
-  This is probably because the clock signal isn't being received. Check to make sure J1 is set to use the GPIO clock or onboard clock
+This is probably because the clock signal isn't being received. Check to make sure a jumper is installed on J1 to select the GPIO clock or onboard clock.
