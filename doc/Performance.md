@@ -1,0 +1,1 @@
+![Performance factors](performance.png)
