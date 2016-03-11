@@ -8,11 +8,13 @@ If you only care about one channel at a time, or perhaps the 20ns latency after 
 
 ![Channel Readout Modification Diagram](channel_readout_modification.png?raw=true "Modifying the board for channel readout control")
 
-We provided two vias near pin 13 on the ADC, so that you could drill out the small via (carefully drilling only the diameter of the via to avoid accidentally cutting the nearby clock trace), then control the SELECT line from the big via.  (It's big enough to hold a 0.100" header pin.)
+We provided two vias near pin 13 on the ADC, so that you could drill out the small via, then control the SELECT line from the big via.  (It's big enough to hold a 0.100" header pin.)
+
+The small via is tiny (less than 1mm, around 1/32"), and there's a buried trace less than half a millimeter away.  So rather than drilling all the way through the board, we had success using a 1/16" drill bit and drilling just deep enough to get through the copper on the top layer.  Then check with a multimeter or scope to make sure you've broken the connection.
 
 **Differential Input support**
 
-Both channels on the AD9201 support differential input, but our design is for single-ended input.  We've made it easier to get access to the "INB-I" and "INB-Q" inputs for those who need that, but we haven't tried this out ourselves, so proceed with caution.  This mod is also relevant if you need to do something different with VREF or VREFSENSE.
+Both channels on the AD9201 support differential input, but our design is for single-ended input.  We've made it easier to get access to the "INB-I" and "INB-Q" inputs for those who need that, but we haven't tried this out ourselves, so proceed with caution.  This mod is also relevant if you need to do something different with VREF or VREFSENSE (which you can read about in the AD9201 datasheet).
 
 ![Differential Input Modification Diagram](differential_input_modification.png?raw=true "Modifying the board for differential input")
 
