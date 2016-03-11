@@ -10,7 +10,7 @@ If you only care about one channel at a time, or perhaps the 20ns latency after 
 
 We provided two vias near pin 13 on the ADC, so that you could drill out the small via, then control the SELECT line from the big via.  (It's big enough to hold a 0.100" header pin.)
 
-The small via is tiny (less than 1mm, around 1/32"), and there's a buried trace less than half a millimeter away.  So rather than drilling all the way through the board, we had success using a 1/16" drill bit and drilling just deep enough to get through the copper on the top layer.  Then check with a multimeter or scope to make sure you've broken the connection.
+The small via is tiny (less than 1mm, around 1/32"), and there's a buried trace less than half a millimeter away.  So rather than drilling all the way through the board, we had success using a 1/16" drill bit and drilling just deep enough to get through the copper on the top layer.  Cutting the trace with a knife is another option.  Then check with a multimeter or scope to make sure you've broken the connection.  
 
 **Differential Input support**
 
