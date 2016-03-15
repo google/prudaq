@@ -15,7 +15,7 @@ permissions and limitations under the License.
 */
 
 // See the Makefile for how this is compiled into a .dtbo file.
-// `make install` puts the .dtbo into /lib/firmware.
+// 'sudo make install' puts the .dtbo into /lib/firmware.
 // setup.sh activates it with:
 // echo prudaq > /sys/devices/bone_capemgr.?/slots
 //
