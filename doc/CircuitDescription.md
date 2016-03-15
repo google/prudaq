@@ -2,11 +2,11 @@ This page describes the theory of operation for the board, and how it's controll
 
 **Clock selection**
 
-There are 3 ways to provide a clock to the ADC: BeagleBone pin, onboard 20MHz oscillator, and external clock source.
+There are 3 ways to provide a clock to the ADC: BeagleBone pin, onboard 10MHz oscillator, and external clock source.
 
 ![Clock selection](clock_selection.png?raw=true "Clock selection")
 
-1. Onboard 20MHz MEMS oscillator.  Install a jumper on J1 toward the "20MHz osc" label near the 46 pin header.  No jumper on J4.
+1. Onboard 10MHz oscillator.  Install a jumper on J1 toward the "10MHz osc" label near the 46 pin header.  No jumper on J4.
 
 2. GPIO clock.  Beaglebone pins P9_31 and P8_30 are routed to the ADC clock input.  Install a jumper on J1 toward the "GPIO clock" label.  No jumper on J4.  P9_31 is one of PRU0's high speed GPIO pins, while P8_30 is one of PRU1's.  This allows PRU0 to bit-bang a clock signal while PRU1 collects data, or PRU1 can both generate the clock signal and collect the samples.  Yet another variant is to use P9_31 as a PWM output so that neither PRU has to generate the clock:
 
@@ -53,7 +53,7 @@ The SMA and MAX4734 inputs are joined at the ADC input through a pair of 10 ohm 
 
 ![Input termination and filtering](input_termination_filtering.png?raw=true "Input termination and filtering")
 
-Note that if J6 or J5 are installed to terminate the SMA connector inputs, they'll present a total of 70 ohms to ground to the analog switch inputs (50 + 10 + 10).
+Note that if J6 or J5 are installed to terminate the SMA connector inputs, they'll present a total of 70 ohms to ground from the analog switch inputs (50 + 10 + 10).
 
 **VREF**
 
