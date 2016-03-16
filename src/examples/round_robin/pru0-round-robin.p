@@ -25,7 +25,14 @@ permissions and limitations under the License.
 
 #include "shared_header.h"
 
-// How many PRU clock cycles == half a cycle of our ADC clock
+// How many PRU clock cycles == half a cycle of our ADC clock.
+// (PRU clock is 200MHz = 5ns)
+//
+// HALF_CYCLE_COUNT = 25 -> ADC clock of 4MHz (2MSPS each on inputs 0,1,4,5)
+//
+// Lower bound is determined by how fast PRU1 can read out the data.  20
+// would probably work, 10 would miss samples.  See comments in PRU1 source
+// for more details.
 #define HALF_CYCLE_COUNT 25
 
 #define COUNT_H    r20
