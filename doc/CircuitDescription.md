@@ -7,8 +7,8 @@ There are 3 ways to provide a clock to the ADC: BeagleBone pin, onboard 10MHz os
 ![Clock selection](clock_selection.png?raw=true "Clock selection")
 
 1. Onboard 10MHz oscillator.  Install a jumper on J1 toward the "10MHz osc" label near the 46 pin header.  No jumper on J4.
-
-2. GPIO clock.  Beaglebone pins P9_31 and P8_30 are routed to the ADC clock input.  Install a jumper on J1 toward the "GPIO clock" label.  No jumper on J4.  P9_31 is one of PRU0's high speed GPIO pins, while P8_30 is one of PRU1's.  This allows PRU0 to bit-bang a clock signal while PRU1 collects data, or PRU1 can both generate the clock signal and collect the samples.  Yet another variant is to use P9_31 as a PWM output so that neither PRU has to generate the clock:
+1. External clock.  Remove jumper from J1 and supply a clock signal either to the middle pin on J1 or via the SMA connector.  Install a jumper on J4 to enable the 50ohm termination resistor.  Clock signal must stay in the range of 0-3.3V.
+1. GPIO clock.  Beaglebone pins P9_31 and P8_30 are routed to the ADC clock input.  Install a jumper on J1 toward the "GPIO clock" label.  No jumper on J4.  P9_31 is one of PRU0's high speed GPIO pins, while P8_30 is one of PRU1's.  This allows PRU0 to bit-bang a clock signal while PRU1 collects data, or PRU1 can both generate the clock signal and collect the samples.  Yet another variant is to use P9_31 as a PWM output so that neither PRU has to generate the clock:
 
 ```bash
 # Use beaglebone PWM features to generate the clock signal instead of the default PRU-based approach
@@ -22,7 +22,7 @@ echo 1000 > /sys/devices/ocp.3/pwm_test_P9_14.12/period
 echo 500 > /sys/devices/ocp.3/pwm_test_P9_14.12/duty
 ```
 
-3. External clock.  Remove jumper from J1 and supply a clock signal either to the middle pin on J1 or via the SMA connector.  Install a jumper on J4 to enable the 50ohm termination resistor.  Clock signal must stay in the range of 0-3.3V.
+
 
 
 **"Enabled" LED**
