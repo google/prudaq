@@ -6,8 +6,6 @@ This directory has code demonstrating:
 
 Example:
 ```
-$ make
-$ sudo ./round-robin pru0-round-robin.bin pru1-read-and-process.bin
 $ make && sudo ./round-robin pru0-round-robin.bin pru1-read-and-process.bin
 262144B of shared DDR available.
  Physical (PRU-side) address:9e780000
