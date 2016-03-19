@@ -32,13 +32,13 @@ If you're looking for an oscilloscope or a hardened data acquisiton system, this
 * We provide a 1V reference for mid-scale, but it's unbuffered
 * At 40MSPS the 1GHz ARMv7 only has 25 cycles per sample (and at least 25% of that is eaten by DMA overhead)
 * Round-robin sampling across the 8 analog inputs is tricky:
- * Switching latency and makes it hard to sample at high rates
+ * Switching latency makes it hard to sample at high rates
  * High sample rates also require a low source impedance (strong input signal) to overcome ~300pF switch and filter capacitance
-* As the previous section points out, you can buffer samples into the 512MB of main memory, but there's no way to get the samples into storage or off the board at the full 40MSPS data rate.
+* As the previous section points out, you can buffer samples into the 512MB of main memory, but there's no way to get the samples into storage or off the board at the full 40MSPS data rate
 
 But all of that notwithstanding, we think PRUDAQ is pretty neat:
  
-* Simultaneously sampled channels are handy for applications like SDR
+* Simultaneously sampled channels are handy for applications like software defined radio
 * Data acquisition boards anywhere close to our sample rate are much larger, cost thousands of dollars, and aren't [Free](http://www.gnu.org/philosophy/free-sw.html)
 * Some boards like the Arduino Due and STM32 have ADCs with upwards of 1MSPS, but much less RAM than a BeagleBone, slower CPUs, and major bottlenecks getting data into flash or onto a host PC
 
