@@ -15,7 +15,7 @@ permissions and limitations under the License.
 */
 
 /*
-PRUDAQ capture program
+Example code for capturing samples from PRUDAQ ADC cape.
 Loads .bin files into both PRUs, then reads from the shared
 buffer in main memory.
 */
@@ -33,14 +33,14 @@ buffer in main memory.
 #include <signal.h>
 #include <time.h>
 
+// Header for sharing info between PRUs and application processor
+#include "shared_header.h"
+
 
 // Used by sig_handler to tell us when to shutdown
 static int bCont = 1;
 
-// header for sharing info between PRUs and application processor
-#include "shared_header.h"
-
-// the PRU clock speed used for GPIO clock generation
+// The PRUs run at 200MHz
 #define PRU_CLK 200e6
 
 void sig_handler (int sig) {
@@ -48,7 +48,6 @@ void sig_handler (int sig) {
   bCont = 0;
   return;
 }
-
 
 void usage (char* arg0) {
   fprintf(stderr, "\nUsage: %s [flags] pru0_code.bin pru1_code.bin\n",
@@ -72,11 +71,13 @@ int main (int argc, char **argv) {
   char* fname = "-";
   FILE* fout = stdout;
 
+  // Make sure we're root
   if (geteuid() != 0) {
     fprintf(stderr, "Must be root.  Try again with sudo.\n");
     return EXIT_FAILURE;
   }
 
+  // Process command line flags
   while (-1 != (ch = getopt(argc, argv, "f:i:q:o:"))) {
     switch (ch) {
     case 'f':
@@ -120,12 +121,12 @@ int main (int argc, char **argv) {
     }
   }
 
-  // install signal handler to catch ctrl-C
+  // Install signal handler to catch ctrl-C
   if (SIG_ERR == signal(SIGINT, sig_handler)) {
     perror("Warn: signal handler not installed %d\n");
   }
 
-  // If this segfaults, make sure you're executing as root.
+  // This segfaults if we're not root.
   prussdrv_init();
   if (0 != prussdrv_open(PRU_EVTOUT_0)) {
     fprintf(stderr,
@@ -147,10 +148,23 @@ int main (int argc, char **argv) {
   unsigned int shared_ddr_len = prussdrv_extmem_size();
   unsigned int physical_address = prussdrv_get_phys_addr((void*)shared_ddr);
 
+  // Accessing the shared memory is slow, so later we'll efficiently copy it out
+  // into this local buffer.
+  uint32_t *local_buf = (uint32_t *) malloc(shared_ddr_len);
+  if (!local_buf) {
+    fprintf(stderr, "Couldn't allocate memory.\n");
+    return EXIT_FAILURE;
+  }
+
   fprintf(stderr,
           "%uB of shared DDR available.\n Physical (PRU-side) address:%x\n",
          shared_ddr_len, physical_address);
   fprintf(stderr, "Virtual (linux-side) address: %p\n\n", shared_ddr);
+  if (shared_ddr_len < 1e6) {
+    fprintf(stderr, "Shared buffer length is unexpectedly small.  Buffer overruns"
+            " are likely at higher sample rates.  (Perhaps extram_pool_sz didn't"
+            " get set when uio_pruss kernel module loaded.  See setup.sh)\n");
+  }
 
   // We'll use the first 8 bytes of PRU memory to tell it where the
   // shared segment of system memory is.
@@ -168,6 +182,12 @@ int main (int argc, char **argv) {
   }
   pparams->high_cycles = cycles/2;
   pparams->low_cycles  = cycles - pparams->high_cycles;
+
+  if (gpiofreq > 5e6) {
+    fprintf(stderr, "Sampling both channels faster than 5MSPS with prudaq_capture"
+            " is likely to cause buffer overruns due to limited DMA bandwidth."
+            " Consider using BeagleLogic's PRUDAQ support instead.\n");
+  }
 
   // Decide the value that'll get written to PRU0's register r30
   // See the docs for how bits in r30 correspond to the INPUT0A/
@@ -195,32 +215,84 @@ int main (int argc, char **argv) {
   uint32_t read_index = 0;
   time_t now = time(NULL);
   time_t start_time = now;
-
+  uint32_t bytes_read = 0;
+  int loops = 0;
   while (bCont) {
+    // Reading from shared memory and PRU RAM is significantly slower than normal
+    // memory, so we loop below rather than checking shared_ptr every time, and
+    // we only check bytes_written once in a while.
     uint32_t *write_pointer_virtual = prussdrv_get_virt_addr(pparams->shared_ptr);
     uint32_t write_index = write_pointer_virtual - shared_ddr;
 
-    // if nothing available sleep for 1ms and look again
     if (read_index == write_index) {
-      usleep(1000);
-      continue;
+      // We managed to loop all the way back before PRU1 wrote even a single sample.
+      // Do nothing.
+
+    } else if (read_index < write_index) {
+      // Copy from the slow DMA coherent buffer to fast normal RAM
+      int bytes = (write_index - read_index) * sizeof(*shared_ddr);
+      memcpy(local_buf, (void *) &(shared_ddr[read_index]), bytes);
+      bytes_read += bytes;
+
+      // Each 32-bit word holds a pair of samples, one from each channel.
+      // Samples are 10 bits, and the remaining bits record the clock and
+      // input select state.  (See doc/InputOutput.md for details)
+
+      // Mask off the clock and input select bits so that we output just
+      // the sample data.
+      for (int i = 0; i < (write_index - read_index); i++) {
+        // Keep just the lower 10 bits from each 16-bit half of the 32-bit word
+        local_buf[i] &= 0x03ff03ff;
+      }
+
+      fwrite(local_buf, bytes, 1, fout);
+
+    } else {
+      // The write pointer has wrapped around, so we'll copy out the data
+      // in two chunks
+      int tail_words = max_index - read_index;
+      int bytes = tail_words * sizeof(*shared_ddr);
+
+      memcpy(local_buf, (void *) &(shared_ddr[read_index]), bytes);
+      bytes_read += bytes;
+
+      for (int i = 0; i < tail_words; i++) {
+        local_buf[i] &= 0x03ff03ff;
+      }
+
+      fwrite(local_buf, bytes, 1, fout);
+
+      bytes = write_index * sizeof(*shared_ddr);
+      memcpy(&(local_buf[tail_words]), (void *) shared_ddr, bytes);
+      bytes_read += bytes;
+
+      for (int i = 0; i < write_index; i++) {
+        local_buf[tail_words + i] &= 0x03ff03ff;
+      }
+
+      fwrite(local_buf, bytes, 1, fout);
     }
+    read_index = write_index;
 
-    uint32_t sample = shared_ddr[read_index];
-    read_index = (read_index + 1) % max_index;
-
-    unsigned int bytes_written = pparams->bytes_written;
-
-    // clear the clock and mux bits for both samples
-    sample &= 0x03ff03ff;
-    fwrite(&sample, sizeof(sample), 1, fout);
-    //fflush(fout);
-    //fprintf(stderr, "%d %d\n", (sample >> 16) & 0xffff, sample & 0xffff);
-
-    if (now != time(NULL)) {
-      now = time(NULL);
-      fprintf(stderr, "\t%ld bytes / second\n", bytes_written / (now - start_time));
+    if (loops++ % 100 == 0) {
+      time_t current_time = time(NULL);
+      if (now != current_time) {
+        now = current_time;
+        // There's a race condition here where the PRU will often update bytes_written
+        // after we checked write_index, so don't worry about small differences. If the
+        // buffer overruns, we'll end up being off by an entire buffer worth.
+        uint32_t bytes_written = pparams->bytes_written;
+        int64_t difference = ((int64_t) bytes_written) - bytes_read;
+        if (difference < 0) {
+          difference = ((uint32_t) bytes_written + shared_ddr_len) -
+                       ((uint32_t) bytes_read + shared_ddr_len);
+        }
+  
+        fprintf(stderr, "\t%ld bytes / second. %uB written, %uB read.\n",
+                bytes_written / (now - start_time), bytes_written, bytes_read);
+      }
     }
+    usleep(100);
   }
 
   // Wait for the PRU to let us know it's done
