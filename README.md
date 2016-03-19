@@ -1,6 +1,8 @@
 # PRUDAQ
 *This is not an official Google product.*
 
+\[Already got a PRUDAQ board?  Head over to the [QuickStart](doc/QuickStart.md)\]
+
 PRUDAQ is a fast, [Free](http://www.gnu.org/philosophy/free-sw.html), low-cost ADC board for BeagleBone Black and BeagleBone Green.  You can build the board yourself using the Eagle files in the repo, or buy one pre-built from [GroupGets](https://groupgets.com/).  Features:
 
 * Dual-channel simultaneously-sampled 10-bit ADC
@@ -22,6 +24,12 @@ The BeagleBone's programmable real-time units (PRUs) make it possible to capture
 
 Note that while we can get 400 megabits per second *into* memory, we don't know any way to store data that quickly on a BeagleBone, whether to onboard flash, an external drive, or by shipping it over a network.  Our high score is currently 112Mbps to a USB flash drive.  See the [Performance](doc/Performance.md) page for details.
 
+## Working with PRUDAQ
+
+We've tried to make PRUDAQ accessible to people who don't want to learn PRU assembly or write C code. [BeagleLogic](https://github.com/abhishek-kakkar/BeagleLogic)'s PRUDAQ driver provides a /dev/beaglelogic device you can pipe into a file or a python program, and their pre-built system image makes it easy to get the software working.
+
+PRUDAQ is also hacker friendly: we've tried to document all the circuit design, firmware and performance considerations.  The stock BeagleBone distro has all the libraries and compiler toolchains needed to compile our sample code, which has lots of comments.  
+
 ## PRUDAQ is not an oscilloscope
 
 If you're looking for an oscilloscope or a hardened data acquisiton system, this board is probably not what you want:
@@ -42,13 +50,7 @@ But all of that notwithstanding, we think PRUDAQ is pretty neat:
 * Data acquisition boards anywhere close to our sample rate are much larger, cost thousands of dollars, and aren't [Free](http://www.gnu.org/philosophy/free-sw.html)
 * Some boards like the Arduino Due and STM32 have ADCs with upwards of 1MSPS, but much less RAM than a BeagleBone, slower CPUs, and major bottlenecks getting data into flash or onto a host PC
 
-## Working with PRUDAQ
-
-We've tried to make PRUDAQ accessible to people who don't want to learn PRU assembly or write C code. [BeagleLogic](https://github.com/abhishek-kakkar/BeagleLogic)'s PRUDAQ driver provides a /dev/beaglelogic device you can pipe into a file or a python program, and their pre-built system image makes it easy to get the software working.
-
-PRUDAQ is also hacker friendly: we've tried to document all the circuit design, firmware and performance considerations.  The stock BeagleBone distro has all the libraries and compiler toolchains needed to compile our sample code, which has lots of comments.  
-
-## Getting Started
+## Learning more
 
 Once you have a PRUDAQ board, the [QuickStart](doc/QuickStart.md) will have you reading samples in minutes.
 
