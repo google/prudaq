@@ -61,3 +61,5 @@ The [Input/Output](doc/InputOutput.md) doc explains how the BeagleBone's GPIO pi
 The [Performance](doc/Performance.md) doc talks about timing considerations between the clock, input select lines, and data lines.  It also talks about the bottlenecks we encounter getting the data into the main CPU and into storage or out over a network.
 
 The [Board Modification](doc/BoardModification.md) doc describes how you can modify the board to get features like differential input.
+
+Email list: [prudaq-users](https://groups.google.com/d/forum/prudaq-users).  We're excited to hear your ideas for how to use PRUDAQ, examples of where it worked for you, and feedback on how to improve it.
