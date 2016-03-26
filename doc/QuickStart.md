@@ -98,9 +98,27 @@ Usage: prudaq_capture [flags] pru0_code.bin pru1_code.bin
 Let's turn up the clock to 2kHz and specify inputs 0 and 4 explicitly (even though they're the defaults), then pipe the binary data into hexdump so it's easy to read:
 
 ```
-$ sudo ./prudaq_capture -i 0 -q 4 -f 2000 pru0.bin pru1.bin | hexdump -d | head
+$ sudo ./prudaq_capture -i 0 -q 4 -f 2000 pru0.bin pru1.bin | hexdump -d -v | head
+2097152B of shared DDR available.
+ Physical (PRU-side) address:91800000
+Virtual (linux-side) address: 0xb6b9a000
 
+Actual GPIO clock speed is 2000.00Hz
+0000000   00000   00000   00001   00513   00001   00513   00001   00513
+0000010   00001   00513   00001   00513   00001   00513   00001   00513
+0000020   00001   00513   00001   00513   00001   00513   00001   00513
+0000030   00001   00513   00001   00513   00001   00513   00001   00513
+0000040   00001   00513   00001   00513   00001   00513   00001   00514
+0000050   00001   00513   00001   00513   00001   00513   00001   00513
+0000060   00001   00513   00001   00513   00001   00513   00001   00513
+0000070   00001   00513   00001   00513   00001   00513   00001   00513
+0000080   00001   00513   00001   00513   00001   00513   00001   00513
+0000090   00001   00513   00001   00513   00001   00513   00001   00513
+	5256 bytes / second. 5256B written, 5256B read.
 ```
+
+The numbers come from hexdump, while the other messages come from prudaq_capture (and technically were written to stderr instead of stdout).  The first column of numbers is the offset, followed by decimal readouts in 16-bit chunks, which happen to be exactly how far we pad out our 10-bit samples.  You can see that the first two values are 0 (due to the way the samples are read by the PRU, the first sample should be ignored).  Then we get alternating values of 1 and 513, which is just what we expected: channel 0 is connected to ground, while channel 1 is about midscale between 0 and 1023.
+
 
 ## Troubleshooting 
 
