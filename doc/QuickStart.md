@@ -8,7 +8,7 @@ For this example we won't be using the SMA coax connectors on the board, so make
 
 J1 is a 3 pin header labeled **clock source** that lets you choose where the ADC clock signal comes from.  The ADC's two channels will be simultaneously sampled each time the clock goes high.  
 
-The [Circuit Description](doc/CircuitDescription.md) doc describes the clock options in detail, but let's keep it simple and choose the GPIO clock option by installing a jumper on J1 between the center pin and the pin near the center of the board labeled "GPIO Clock".
+The [Circuit Description](CircuitDescription.md) doc describes the clock options in detail, but let's keep it simple and choose the GPIO clock option by installing a jumper on J1 between the center pin and the pin near the center of the board labeled "GPIO Clock".
 
 The GPIO clock is easy to configure in software for any sample rate we want.
 
