@@ -145,7 +145,7 @@ int init_and_sample(volatile pruparams_t *pparams,
     int max_wait = 2;
     if (now > start_time + max_wait) {
       fprintf(stderr, "Timeout waiting for data from ADC."
-                      "  (Did you install the clock jumper?\n");
+                      "  (Did you install the clock jumper?)\n");
       return -1;
     }
 
@@ -230,19 +230,17 @@ int main (int argc, char **argv) {
 
       int result = gpio_set(channel0_input, channel1_input, level);
       if (result != 0) {
-        fprintf(stderr, "Bailing out\n");
         passed = 0;
         break;
       }
-  
+
       result = init_and_sample(pparams, shared_ddr, i, i + 4,
                                &channel0, &channel1);
       if (result != 0) {
-        fprintf(stderr, "Bailing out\n");
         passed = 0;
         break;
       }
-  
+
       // The sample data is in the low 10 bits
       uint16_t sample0 = channel0 & 0x03ff;
       uint16_t sample1 = channel1 & 0x03ff;
@@ -250,7 +248,7 @@ int main (int argc, char **argv) {
       // affect the sample data for 3 more cycles, but that's okay since
       // we took several samples with this channel enabled).
       uint16_t input0a = (channel0 & 0x0400) ? 1:0;
-   
+
       fprintf(stderr, "  DEBUG: Got %hd and %hd and input0a=%d\n",
               sample0, sample1, input0a);
       if (input0a != (channel0_input % 2)) {
@@ -258,7 +256,7 @@ int main (int argc, char **argv) {
                 input0a, channel0_input % 2);
         passed = 0;
       }
-      
+
       if (level == 0) {
         if (sample0 > 20) {
           fprintf(stderr, "FAIL: Expected input %d to be ~0 but got %hd\n",
@@ -284,7 +282,7 @@ int main (int argc, char **argv) {
       }
     }
   }
-  
+
   prussdrv_exit();
 
   if (passed) {
