@@ -90,7 +90,7 @@ int gpio_set(int channel0_input, int channel1_input, int level) {
     //fprintf(stderr, "Writing %s to %s\n", zero_or_one, fn);
     FILE *gpio_value_file = fopen(fn, "w");
     if (gpio_value_file == NULL) {
-      fprintf(stderr, "Failed to open %s.\n", fn);
+      fprintf(stderr, "Failed to open %s. (Did you run selftest_stup.sh?)\n", fn);
       return -1;
     }
     if (!fputs(zero_or_one, gpio_value_file)) {
