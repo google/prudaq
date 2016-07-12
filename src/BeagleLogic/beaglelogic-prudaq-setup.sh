@@ -23,6 +23,9 @@ if [[ ! -e /dev/beaglelogic ]] ; then
   exit 1
 fi
 
+echo 'Setting up BeagleLogic for continuous capture'
+echo 1 > /sys/devices/virtual/misc/beaglelogic/triggerflags
+
 # Enable GPIO 117 only if it's not enabled yet.
 if [[ ! -e /sys/class/gpio/gpio117 ]] ; then
   echo 'Pulling down the enable pin (P9_25) to turn on the ADC.'
