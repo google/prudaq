@@ -251,26 +251,24 @@ int main (int argc, char **argv) {
       // The write pointer has wrapped around, so we'll copy out the data
       // in two chunks
       int tail_words = max_index - read_index;
-      int bytes = tail_words * sizeof(*shared_ddr);
+      int tail_bytes = tail_words * sizeof(*shared_ddr);
 
-      memcpy(local_buf, (void *) &(shared_ddr[read_index]), bytes);
-      bytes_read += bytes;
+      memcpy(local_buf, (void *) &(shared_ddr[read_index]), tail_bytes);
+      bytes_read += tail_bytes;
 
       for (int i = 0; i < tail_words; i++) {
         local_buf[i] &= 0x03ff03ff;
       }
 
-      fwrite(local_buf, bytes, 1, fout);
-
-      bytes = write_index * sizeof(*shared_ddr);
-      memcpy(&(local_buf[tail_words]), (void *) shared_ddr, bytes);
-      bytes_read += bytes;
+      int head_bytes = write_index * sizeof(*shared_ddr);
+      memcpy(&(local_buf[tail_words]), (void *) shared_ddr, head_bytes);
+      bytes_read += head_bytes;
 
       for (int i = 0; i < write_index; i++) {
         local_buf[tail_words + i] &= 0x03ff03ff;
       }
 
-      fwrite(local_buf, bytes, 1, fout);
+      fwrite(local_buf, tail_bytes + head_bytes, 1, fout);
     }
     read_index = write_index;
 
